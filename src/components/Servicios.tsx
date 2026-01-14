@@ -7,6 +7,7 @@ import logisticaImg from 'figma:asset/db9abd92e988b2aa58d2d633b644cd55d0b3a92d.p
 import heroBg from 'figma:asset/0a1757e638ab1fb53c0032b34a92c151833d26de.png';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { TEXTS } from '@/content/texts';
+import { callEdge } from '../utils/callEdge';
 
 export function Servicios() {
   const location = useLocation();
@@ -41,45 +42,21 @@ export function Servicios() {
     setIsSubmitting(true);
     setError('');
     
-    try {
-      // Guardar en localStorage (100% offline)
-      const solicitudes = JSON.parse(localStorage.getItem('onus_solicitudes') || '[]');
-      
-      const nuevaSolicitud = {
-        ...formularioData,
-        id: crypto.randomUUID(),
-        fecha: new Date().toISOString(),
-        estado: 'pendiente',
-        leido: false
-      };
-      
-      solicitudes.push(nuevaSolicitud);
-      localStorage.setItem('onus_solicitudes', JSON.stringify(solicitudes));
-      
-      // Crear lead unificado
-      const leads = JSON.parse(localStorage.getItem('onus_leads') || '[]');
-      const nuevoLead = {
-        id: crypto.randomUUID(),
-        nombre: formularioData.nombre,
-        empresa: '',
-        telefono: formularioData.telefono,
-        email: formularioData.email,
-        mensaje: `Zona: ${formularioData.zona}\nExperiencia: ${formularioData.experiencia}\nVehículo: ${formularioData.tipoVehiculo}\nComentarios: ${formularioData.comentarios || 'N/A'}`,
-        lead_type: 'messenger',
-        service: servicioActivo === 'flota' ? 'fleet' : 'logistics_staff',
-        source: 'services',
-        status: 'new',
-        internal_notes: '',
-        tags: [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      leads.push(nuevoLead);
-      localStorage.setItem('onus_leads', JSON.stringify(leads));
-
-      console.log('Solicitud guardada exitosamente en localStorage');
-      
-      setFormularioEnviado(true);
+    try {      // Guardar solicitud en backend
+      await callEdge('/solicitudes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: formularioData.nombre,
+          telefono: formularioData.telefono,
+          email: formularioData.email,
+          mensaje: `${formularioData.zona} | ${formularioData.experiencia} | ${formularioData.tipoVehiculo} | ${formularioData.comentarios || 'N/A'}`,
+          lead_type: 'messenger',
+          service: 'services',
+          source: 'services',
+        }),
+      });
+setFormularioEnviado(true);
       setTimeout(() => {
         setShowFormulario(false);
         setFormularioEnviado(false);
@@ -624,3 +601,12 @@ export function Servicios() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+

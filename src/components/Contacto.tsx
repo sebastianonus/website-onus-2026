@@ -9,6 +9,8 @@ import backgroundImg from 'figma:asset/e4d65246763c398c8158c537a32f609404b085bd.
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { TEXTS } from '@/content/texts';
 
+
+import { callEdge } from '../utils/callEdge';
 export function Contacto() {
   const [searchParams] = useSearchParams();
   const leadType = searchParams.get('lead_type') || 'client';
@@ -52,41 +54,11 @@ export function Contacto() {
         source: searchParams.has('service') ? 'services' : 'contact_page'
       };
 
-      // Guardar en localStorage (100% offline)
-      const leads = JSON.parse(localStorage.getItem('onus_leads') || '[]');
-      
-      const nuevoLead = {
-        ...leadData,
-        id: crypto.randomUUID(),
-        status: 'new',
-        internal_notes: '',
-        tags: [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      leads.push(nuevoLead);
-      localStorage.setItem('onus_leads', JSON.stringify(leads));
-
-      // También guardar en contactos si viene de la página de contacto
-      if (leadData.source === 'contact_page') {
-        const contactos = JSON.parse(localStorage.getItem('onus_contactos') || '[]');
-        const nuevoContacto = {
-          id: crypto.randomUUID(),
-          nombre: formData.nombre,
-          empresa: formData.empresa,
-          telefono: formData.telefono,
-          email: formData.email,
-          mensaje: formData.mensaje,
-          fecha: new Date().toISOString(),
-          leido: false
-        };
-        contactos.push(nuevoContacto);
-        localStorage.setItem('onus_contactos', JSON.stringify(contactos));
-      }
-
-      console.log('Lead guardado exitosamente en localStorage');
-
+      await callEdge('/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(leadData),
+      });
       setSubmitted(true);
       setTimeout(() => {
         setSubmitted(false);
@@ -325,3 +297,6 @@ export function Contacto() {
     </div>
   );
 }
+
+
+
