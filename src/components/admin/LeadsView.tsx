@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { callEdge } from '../../utils/callEdge';
 import { Search, Phone, Mail, MessageSquare, Eye, Copy, ArrowLeft, UserCheck, Download } from 'lucide-react';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 import { toast } from 'sonner';
@@ -23,7 +24,7 @@ interface Lead {
   updated_at: string;
 }
 
-export function LeadsView() {
+export function LeadsView({ pin }: LeadsViewProps) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,40 +55,27 @@ export function LeadsView() {
   }, [leads, searchTerm, filterLeadType, filterService, filterStatus]);
 
   const fetchLeads = async () => {
-    try {
-      setLoading(true);
-      // Cargar leads desde localStorage (100% offline)
-      const stored = localStorage.getItem('onus_leads');
-      if (stored) {
-        const rawLeads = JSON.parse(stored);
-        // Normalizar leads para asegurar que todos tengan la estructura correcta
-        const normalizedLeads = rawLeads.map((lead: any) => ({
-          id: lead.id || crypto.randomUUID(),
-          nombre: lead.nombre || '',
-          empresa: lead.empresa || '',
-          telefono: lead.telefono || '',
-          email: lead.email || '',
-          mensaje: lead.mensaje || '',
-          lead_type: lead.lead_type || 'messenger',
-          service: lead.service || 'general_contact',
-          source: lead.source || 'contact_page',
-          status: lead.status || 'new',
-          internal_notes: lead.internal_notes || '',
-          tags: lead.tags || [],
-          created_at: lead.created_at || lead.fecha || new Date().toISOString(),
-          updated_at: lead.updated_at || lead.fecha || new Date().toISOString()
-        }));
-        setLeads(normalizedLeads);
-      } else {
-        setLeads([]);
-      }
-    } catch (error) {
-      console.error('Error fetching leads:', error);
-      toast.error(TEXTS.admin.leads.toasts.errorLoading);
-    } finally {
-      setLoading(false);
+  try {
+    setLoading(true);
+
+    const res = await callEdge(`/admin/leads?pin=${encodeURIComponent(pin)}`, {
+      method: "GET",
+    });
+
+    if (!res?.data) {
+      setLeads([]);
+      return;
     }
-  };
+
+    setLeads(res.data);
+  } catch (error) {
+    console.error("Error fetching leads:", error);
+    toast.error(TEXTS.admin.leads.toasts.errorLoading);
+    setLeads([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const applyFilters = () => {
     let filtered = [...leads];
@@ -869,3 +857,5 @@ export function LeadsView() {
     </div>
   );
 }
+
+

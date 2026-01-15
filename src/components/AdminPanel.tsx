@@ -996,7 +996,7 @@ export function AdminPanel() {
             onToggleActivo={handleToggleMensajeroActivo}
           />
         ) : activeView === 'leads' ? (
-          <LeadsView />
+          <LeadsView pin={pin} />
         ) : activeView === 'tarifarios' ? (
           <div>
             <h1 className="text-black flex items-center gap-3 mb-8">
